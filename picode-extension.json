@@ -1,0 +1,24 @@
+{
+  "id": "picode-mail-microsoft",
+  "name": "Microsoft Mail",
+  "version": "0.2.0",
+  "apiVersion": 5,
+  "publisher": "COGNIX[WS]",
+  "description": "Connect and synchronize your Microsoft Mail accounts with the core Inbox.",
+  "activation": {
+    "instance": true
+  },
+  "process": {
+    "command": "node",
+    "args": [
+      "${extensionDir}/src/main.mjs"
+    ]
+  },
+  "mail": {
+    "provider": "microsoft"
+  },
+  "permissions": [
+    "mail:sync",
+    "mail:execute"
+  ]
+}
