@@ -124,3 +124,28 @@ test('plain comparison text, HTML and UTF-8 bounds preserve meaning', () => {
     subject: 'x'.repeat(2100)
   }, 'inbox').truncated, true);
 });
+
+test('large escaped bodies split without advancing the Graph cursor early', async () => {
+  const ids = Array.from({ length: 6 }, (_, i) => 'large-' + i);
+  const old = cursor();
+  const commits = [];
+  const read = async (_a, path) => path.includes('/delta') ? {
+    value: ids.map(id => message(id)),
+    '@odata.deltaLink': '/v1.0/me/mailFolders/inbox/messages/delta?$deltatoken=done'
+  } : { ...message(decodeURIComponent(path.split('/messages/')[1].split('?')[0])),
+    body: { contentType: 'text', content: '\u0001'.repeat(1_000_000) } };
+  await microsoftSync(account, structuredClone(old), { read, commit: async (a, next, messages) => {
+    assert.ok(Buffer.byteLength(JSON.stringify({ account: a.id, generation: a.generation, cursor: JSON.stringify(next), messages })) < 32 * 1024 * 1024);
+    commits.push({ cursor: structuredClone(next), ids: messages.map(m => m.externalId) });
+  }});
+  assert.deepEqual(commits.flatMap(c => c.ids), ids);
+  assert.ok(commits.length > 1);
+  assert.ok(commits.slice(0, -1).every(c => c.cursor.links.inbox === old.links.inbox && !c.cursor.complete.inbox));
+  assert.equal(commits.at(-1).cursor.complete.inbox, true);
+  let attempts = 0;
+  await assert.rejects(microsoftSync(account, structuredClone(old), { read, commit: async (_a, next) => {
+    assert.equal(next.links.inbox, old.links.inbox);
+    if (++attempts === 2) throw new Error('fixture interruption');
+  }}), /fixture interruption/);
+  assert.equal(attempts, 2);
+});

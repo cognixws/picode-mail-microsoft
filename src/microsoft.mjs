@@ -1,3 +1,4 @@
+import { messageBatches } from './batches.mjs';
 import { clipped, text } from './text.mjs';
 const graphPath = link => {
   const u = new URL(link, 'https://graph.microsoft.com');
@@ -110,6 +111,7 @@ async function microsoftSync(a, c, io) {
     }
     messages.push(normalized);
   }
+  const previous = structuredClone(c);
   const next = result['@odata.nextLink'],
     delta = result['@odata.deltaLink'];
   if (next) c.links[folder] = graphPath(next);else {
@@ -119,7 +121,12 @@ async function microsoftSync(a, c, io) {
     c.index = (c.index + 1) % folders.length;
   }
   const pending = !!next || !folders.every(f => c.complete[f]);
-  await commit(a, c, messages, false, pending ? 'syncing' : 'ready');
+  const batches = messageBatches(messages);
+  if (!batches.length) await commit(a, c, [], false, pending ? 'syncing' : 'ready');
+  for (let i = 0; i < batches.length; i++) {
+    const last = i === batches.length - 1;
+    await commit(a, last ? c : previous, batches[i], false, last && !pending ? 'ready' : 'syncing');
+  }
   return pending;
 }
 export { microsoftMessage, microsoftSync, graphPath };

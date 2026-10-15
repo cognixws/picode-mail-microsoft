@@ -14,6 +14,7 @@ from real-provider acceptance. No real email or OAuth credential is a fixture.
 | Operation ready vs uncertain | Request execution only for ready IDs | PASS: runtime.test.mjs |
 | Operation execution fails | Preserve unknown outcome; do not retry in the cycle | PASS: runtime.test.mjs |
 | Import pending vs idle / unavailable host | Wait 500 ms vs 30 seconds | PASS: runtime.test.mjs |
+| Large or JSON-escaped bodies | Split by serialized bytes; advance cursor only after durable batches | PASS: microsoft.test.mjs |
 | Graph cursor expired | Reset folder import within the initial-history bound | PASS: microsoft.test.mjs |
 | Hostile or foreign delta link | Reject outside the pinned /me namespace | PASS: microsoft.test.mjs |
 | Message moved between folders | Distinguish deletion tombstones from archive/trash moves | PASS: microsoft.test.mjs |
